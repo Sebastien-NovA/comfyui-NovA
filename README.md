@@ -1,5 +1,5 @@
 # comfyui-NovA
-Some (hopefully) useful nodes for ComfyUI, compatible with Node 2.0, to simplify your workflows.
+Some (hopefully) useful nodes for ComfyUI, designed for Node 2.0, to simplify your workflows.
 
 - The all-in-one "NovAModelsLoader" node allows you to load the standard models required for text-to-image generation (Diffusion Model, Text Encoder, and VAE) within a single node.
 
