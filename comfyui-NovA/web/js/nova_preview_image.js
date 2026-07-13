@@ -47,11 +47,11 @@ app.registerExtension({
                     img.src = `/view?filename=${encodeURIComponent(imgMetadata.filename)}&type=${imgMetadata.type}&subfolder=${encodeURIComponent(imgMetadata.subfolder)}`;
                     
                     img.onload = () => {
-                        // Capture pre-execution boundaries configured by the user[cite: 2]
+                        // Capture pre-execution boundaries configured by the user
                         const initialWidth = this.size[0]; 
                         const initialHeight = this.size[1];
                         
-                        // Vertical layout offset for the title bar and custom export button[cite: 2]
+                        // Vertical layout offset for the title bar and custom export button
                         const widgetPadding = 60; 
                         
                         // Compute raw physical dimensions and structural ratios

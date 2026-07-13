@@ -19,12 +19,11 @@ app.registerExtension({
                     handleSave(textWidget.value);
                 });
 
-                // On calcule la taille minimale requise pour les widgets
+				// The minimum size required for the widgets is calculated.
                 const minSize = node.computeSize();
-                
-                // On applique la taille maximum entre : ce que l'utilisateur a redimensionné (node.size), 
-                // le minimum calculé par ComfyUI (minSize), et nos dimensions par défaut.
-                node.size = [
+                // We apply the maximum size among: what the user resized (node.size),
+                // the minimum calculated by ComfyUI (minSize), and our default dimensions.
+				node.size = [
                     Math.max(node.size[0], minSize[0], 500),
                     Math.max(node.size[1], minSize[1], 400)
                 ];
@@ -35,7 +34,7 @@ app.registerExtension({
     }
 });
 
-// --- Gestionnaires d'ouverture / Sauvegarde ---
+// --- Open / Save Handlers ---
 
 async function handleLoad(textWidget) {
     try {

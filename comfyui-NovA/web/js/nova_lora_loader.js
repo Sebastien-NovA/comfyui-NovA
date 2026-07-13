@@ -11,7 +11,7 @@ app.registerExtension({
                     onNodeCreated.apply(this, arguments);
                 }
 
-                this.size = [570, 280];
+                this.size = [500, 280];
 				
 				this.loraCount = 1;
 
