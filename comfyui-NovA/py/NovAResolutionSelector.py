@@ -37,7 +37,7 @@ class NovAResolutionSelector:
     # Added Latent to corresponding output names
     RETURN_NAMES = ("Width", "Height", "Optimised Shift", "Latent")
     FUNCTION = "get_resolution"
-    CATEGORY = "NovA Tools"
+    CATEGORY = "️☣️ NovA Tools"
 
     def get_resolution(self, format, greatest_length, custom_width, custom_height, batch_size):
         if format == "Custom Format":
@@ -66,7 +66,6 @@ class NovAResolutionSelector:
         # --- OPTIMISED SHIFT CALCULATION ---
         base_pixels = 1024 * 1024
         current_pixels = width * height
-        
         pixel_ratio = current_pixels / base_pixels
         
         # Base Shift (3.0) + natural log of pixel ratio
@@ -79,11 +78,6 @@ class NovAResolutionSelector:
             
         return (width, height, shift_opti, {"samples": latent})
 
-
-NODE_CLASS_MAPPINGS = {
-    "NovAResolutionSelector": NovAResolutionSelector
-}
-
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "NovAResolutionSelector": "NovA Resolution Selector"
-}
+# ComfyUI registry mappings for explicit dynamic discovery by the __init__.py
+NODE_CLASS_MAPPINGS = {"NovAResolutionSelector": NovAResolutionSelector}
+NODE_DISPLAY_NAME_MAPPINGS = {"NovAResolutionSelector": "NovA Resolution Selector"}

@@ -37,7 +37,7 @@ class NovA_Ultimate_T2I:
     RETURN_TYPES = ("IMAGE", "CONDITIONING", "MODEL", "VAE", "LATENT")
     RETURN_NAMES = ("image", "conditioning", "model", "vae", "latent")
     FUNCTION = "generate"
-    CATEGORY = "NovA Tools"
+    CATEGORY = "️☣️ NovA Tools"
 
     def generate(self, prompt, diffusion_model, clip_name, vae_name,
                  active_lora_1, lora_1, lora1_strength_model, lora1_strength_clip,
@@ -156,6 +156,7 @@ class NovA_Ultimate_T2I:
         image = vae_decoder.decode(vae, samples)[0]
 
         return (image, cond, model, vae, samples)
-    
+
+# ComfyUI registry mappings for explicit dynamic discovery by the __init__.py
 NODE_CLASS_MAPPINGS = {"NovAUltimateT2I": NovA_Ultimate_T2I}
 NODE_DISPLAY_NAME_MAPPINGS = {"NovAUltimateT2I": "NovA Ultimate Text to Image"}

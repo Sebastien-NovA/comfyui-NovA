@@ -16,7 +16,7 @@ class NovAClipText:
     RETURN_TYPES = ("CONDITIONING", "CONDITIONING", "STRING")
     RETURN_NAMES = ("CONDITIONING", "CONDITIONING ZERO", "PROMPT")
     FUNCTION = "encode"
-    CATEGORY = "NovA Tools"
+    CATEGORY = "️☣️ NovA Tools"
 
     def encode(self, clip, text):
         # Official ComfyUI Encoding
@@ -28,6 +28,6 @@ class NovAClipText:
         # Return conditioning, zeroed conditioning, and prompt as text
         return (conditioning, conditioning_zero, text)
 
-# ComfyUI registry mappings for node initialization and UI display
+# ComfyUI registry mappings for explicit dynamic discovery by the __init__.py
 NODE_CLASS_MAPPINGS = {"NovAClipText": NovAClipText}
 NODE_DISPLAY_NAME_MAPPINGS = {"NovAClipText": "NovA CLIP Text Encoder"}

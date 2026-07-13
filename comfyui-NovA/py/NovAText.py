@@ -12,12 +12,12 @@ class NovAText:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("STRING",)
     FUNCTION = "novaPrompt"
-    CATEGORY = "NovA Tools"
+    CATEGORY = "️☣️ NovA Tools"
 
     def novaPrompt(self, text):        
         # Return prompt as text
         return (text,)
 
-# ComfyUI registry mappings for node initialization and UI display
+# ComfyUI registry mappings for explicit dynamic discovery by the __init__.py
 NODE_CLASS_MAPPINGS = {"NovAText": NovAText}
 NODE_DISPLAY_NAME_MAPPINGS = {"NovAText": "NovA Text"}

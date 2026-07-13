@@ -64,7 +64,7 @@ class NovAKSampler:
     RETURN_TYPES = ("LATENT", "MODEL", "IMAGE")
     RETURN_NAMES = ("LATENT", "MODEL", "IMAGE")
     FUNCTION = "sample_and_decode"
-    CATEGORY = "NovA Tools"
+    CATEGORY = "️☣️ NovA Tools"
 
     def sample_and_decode(self, model, vae, seed, steps, cfg, sampler_name, scheduler, positive, negative, denoise, format, greatest_length, custom_width, custom_height, batch_size):
         # 1. Calculate resolution based on selected format or custom values
@@ -111,11 +111,6 @@ class NovAKSampler:
         # 5. Return the latent data, the original model reference for chaining, and decoded images
         return (latent_output, model, image_output)
 
-# Register mappings for explicit dynamic discovery by the __init__.py engine
-NODE_CLASS_MAPPINGS = {
-    "NovAKSampler": NovAKSampler
-}
-
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "NovAKSampler": "NovA KSampler (with VAE & Resolution)"
-}
+# ComfyUI registry mappings for explicit dynamic discovery by the __init__.py
+NODE_CLASS_MAPPINGS = {"NovAKSampler": NovAKSampler}
+NODE_DISPLAY_NAME_MAPPINGS = {"NovAKSampler": "NovA KSampler (with VAE & Resolution)"}

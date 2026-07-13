@@ -47,7 +47,7 @@ class NovAModelsLoader:
     RETURN_TYPES = ("MODEL", "CLIP", "VAE")
     RETURN_NAMES = ("MODEL", "CLIP", "VAE")
     FUNCTION = "load_all_models"
-    CATEGORY = "NovA Tools"
+    CATEGORY = "️☣️ NovA Tools"
 
     def load_all_models(self, unet_name, weight_dtype, clip_name, clip_type, vae_name):
         # Instantiate core ComfyUI loaders to reuse memory management and caching logic
@@ -68,6 +68,6 @@ class NovAModelsLoader:
 
         return (model, clip, vae)
 
-# Registration mapping for ComfyUI backend
+# ComfyUI registry mappings for explicit dynamic discovery by the __init__.py
 NODE_CLASS_MAPPINGS = {"NovAModelsLoader": NovAModelsLoader}
 NODE_DISPLAY_NAME_MAPPINGS = {"NovAModelsLoader": "NovA Models Loader"}

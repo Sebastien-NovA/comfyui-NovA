@@ -20,7 +20,7 @@ class NovAPreviewImage:
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "process_preview"
-    CATEGORY = "NovA Tools"
+    CATEGORY = "️☣️ NovA Tools"
     OUTPUT_NODE = True
 
     def process_preview(self, image):
@@ -30,9 +30,7 @@ class NovAPreviewImage:
             array = 255.0 * tensor.cpu().numpy()
             img = Image.fromarray(np.clip(array, 0, 255).astype(np.uint8))
             
-            # OPTIMIZATION: Generate a highly unique, random temporary filename
-            # This aligns with standard ComfyUI behavior for native image downloads
-            # while leaving the frontend "Save Image As..." logic completely unaffected.
+            # Generate a highly unique, random temporary filename
             random_token = secrets.token_hex(4)
             temp_filename = f"ComfyUI_temp_{random_token}_{index}.png"
             
@@ -48,11 +46,7 @@ class NovAPreviewImage:
             
         return {"ui": {"images": results}, "result": (image,)}
         
-# Register mappings for explicit dynamic discovery by the __init__.py engine
-NODE_CLASS_MAPPINGS = {
-    "NovAPreviewImage": NovAPreviewImage
-}
+# ComfyUI registry mappings for explicit dynamic discovery by the __init__.py
+NODE_CLASS_MAPPINGS = {"NovAPreviewImage": NovAPreviewImage}
+NODE_DISPLAY_NAME_MAPPINGS = {"NovAPreviewImage": "NovA Preview Image"}
 
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "NovAPreviewImage": "NovA Preview Image"
-}
