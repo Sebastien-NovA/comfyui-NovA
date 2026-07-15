@@ -5,7 +5,7 @@ Some (hopefully) useful nodes for ComfyUI, designed for Node 2.0, to simplify yo
 
 - The all-in-one "NovALoraLoader" node allows you to stack LoRAs with a single click. For each loaded LoRA, the node includes a toggle switch to enable or disable it, as well as controls for adjusting the model and CLIP strength, which also means less "spaghetti" in your workflow!
 
-- The "NovAText" and "NovAClipText" nodes add the ability to import or save your prompts as text files. The "NovAClipText" node also includes a "conditioning zero" output to simplify your workflows with Turbo models (cfg 1.0), again, less "spaghetti" in your workflow.
+- The "NovAText" and "NovAClipText" nodes add the ability to import or save your prompts as text files. The "NovAClipText" node also includes a "conditioning zero" output to simplify your workflows with Turbo models (cfg 1.0). Again, less "spaghetti" in your workflow.
 
 - The "NovAKSampler" node, derived from the official node, incorporates new features: a VAE decoder is implemented directly within it (using the new "vae" input) , along with an advanced resolution selector for the latent image. You can also chain other nodes thanks to its two new outputs "Model" and "Latent" (for instance, to perform a second upscaling pass). And again, less "spaghetti" in your workflow (yes, it's an obsession).
 
