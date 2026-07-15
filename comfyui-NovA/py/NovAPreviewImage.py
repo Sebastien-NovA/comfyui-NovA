@@ -48,5 +48,5 @@ class NovAPreviewImage:
         
 # ComfyUI registry mappings for explicit dynamic discovery by the __init__.py
 NODE_CLASS_MAPPINGS = {"NovAPreviewImage": NovAPreviewImage}
-NODE_DISPLAY_NAME_MAPPINGS = {"NovAPreviewImage": "NovA Preview Image"}
+NODE_DISPLAY_NAME_MAPPINGS = {"NovAPreviewImage": "NovA Preview Image (autofit)"}
 

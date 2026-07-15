@@ -113,4 +113,4 @@ class NovAKSampler:
 
 # ComfyUI registry mappings for explicit dynamic discovery by the __init__.py
 NODE_CLASS_MAPPINGS = {"NovAKSampler": NovAKSampler}
-NODE_DISPLAY_NAME_MAPPINGS = {"NovAKSampler": "NovA KSampler (with VAE & Resolution)"}
+NODE_DISPLAY_NAME_MAPPINGS = {"NovAKSampler": "NovA KSampler (with VAE)"}
