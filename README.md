@@ -1,9 +1,9 @@
 # comfyui-NovA
 Some (hopefully) useful nodes for ComfyUI, designed for Node 2.0, to simplify your workflows.
 
-- The all-in-one "NovAModelsLoader" node allows you to load the standard models required for text-to-image generation (Diffusion Model, Text Encoder, and VAE) within a single node.
+- The all-in-one "NovAModelsLoader" node allows you to load the standard models required for text-to-image generation (Diffusion Model, Text Encoder, and VAE) within a single node, which means less "spaghetti" in your workflow!
 
-- The all-in-one "NovALoraLoader" node allows you to stack LoRAs with a single click. For each loaded LoRA, the node includes a toggle switch to enable or disable it, as well as controls for adjusting the model and CLIP strength, which also means less "spaghetti" in your workflow!
+- The all-in-one "NovALoraLoader" node allows you to stack LoRAs with a single click. For each loaded LoRA, the node includes a toggle switch to enable or disable it, as well as controls for adjusting the model and CLIP strength, which also means less "spaghetti" in your workflow.
 
 - The "NovAText" and "NovAClipText" nodes add the ability to import or save your prompts as text files. The "NovAClipText" node also includes a "conditioning zero" output to simplify your workflows with Turbo models (cfg 1.0). Again, less "spaghetti" in your workflow.
 
