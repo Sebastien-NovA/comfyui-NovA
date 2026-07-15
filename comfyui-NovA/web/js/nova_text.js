@@ -9,23 +9,23 @@ app.registerExtension({
                 const textWidget = node.widgets?.find(w => w.name === "text");
                 if (!textWidget) return;
 
-                // 1. Add button LOAD
+                // Add button LOAD
                 node.addWidget("button", "📂 Load Prompt", null, () => {
                     handleLoad(textWidget);
                 });
 
-                // 2. Add button SAVE
+                // Add button SAVE
                 node.addWidget("button", "💾 Save Prompt", null, () => {
                     handleSave(textWidget.value);
                 });
 
-				// The minimum size required for the widgets is calculated.
+				// Calculating the minimum size required for the widgets.
                 const minSize = node.computeSize();
-                // We apply the maximum size among: what the user resized (node.size),
-                // the minimum calculated by ComfyUI (minSize), and our default dimensions.
+                // Applying the maximum size among: what the user resized (node.size),
+                // the minimum calculated by ComfyUI (minSize), and the default dimensions.
 				node.size = [
-                    Math.max(node.size[0], minSize[0], 500),
-                    Math.max(node.size[1], minSize[1], 400)
+                    Math.max(node.size[0], minSize[0], 400),
+                    Math.max(node.size[1], minSize[1], 200)
                 ];
 
                 node.setDirtyCanvas(true, true);
@@ -34,7 +34,7 @@ app.registerExtension({
     }
 });
 
-// --- Open / Save Handlers ---
+// --- Open / Save dedicated handlers ---
 
 async function handleLoad(textWidget) {
     try {
