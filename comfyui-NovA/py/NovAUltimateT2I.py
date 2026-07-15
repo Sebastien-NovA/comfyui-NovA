@@ -1,8 +1,27 @@
+# ComfyUI\custom_nodes\comfyui-NovA\py\NovAUltimateT2I.py
+
 import folder_paths
 import comfy.samplers
 from nodes import UNETLoader, CLIPLoader, VAELoader, LoraLoader, CLIPTextEncode, EmptyLatentImage, KSampler, VAEDecode
 
 class NovA_Ultimate_T2I:
+    def __init__(self):
+        # PHASE 1 CACHE: Pristine Base Models (Loaded directly from disk/core cache)
+        self.cached_base_state = None
+        self.cached_base_model = None
+        self.cached_base_clip = None
+        self.cached_base_vae = None
+
+        # PHASE 2 CACHE: Patched Models (LoRAs, Enhancers, Shifts applied to clones)
+        self.cached_patched_model_state = None
+        self.cached_patched_model = None
+        self.cached_patched_clip = None
+
+        # PHASE 3 CACHE: Conditioning (Encoded text using the patched CLIP)
+        self.cached_conditioning_state = None
+        self.cached_cond = None
+        self.cached_uncond = None
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -45,118 +64,156 @@ class NovA_Ultimate_T2I:
                  active_lora_3, lora_3, lora3_strength_model, lora3_strength_clip,
                  sampler_name, scheduler, cfg, steps, shift, seed, image_length, image_height):
 
-        # 1. Load Base Models via standard ComfyUI loaders
-        unet_loader = UNETLoader()
-        model = unet_loader.load_unet(diffusion_model, "default")[0]
-
-        # Détection du type pour Krea2 Turbo
-        model_name = diffusion_model.lower()
-        clip_type = "default"
-        if "krea2" in model_name or "krea2" in clip_name.lower():
-            clip_type = "krea2"
-
-        clip_loader = CLIPLoader()
-        # On passe le type détecté ('default' ou 'krea2') au chargeur de CLIP
-        clip = clip_loader.load_clip(clip_name, clip_type)[0]
-
-        vae_loader = VAELoader()
-        vae = vae_loader.load_vae(vae_name)[0]
-
-        # 2. Apply LoRAs conditionally
-        lora_loader = LoraLoader()
-        if active_lora_1:
-            model, clip = lora_loader.load_lora(model, clip, lora_1, lora1_strength_model, lora1_strength_clip)
-        if active_lora_2:
-            model, clip = lora_loader.load_lora(model, clip, lora_2, lora2_strength_model, lora2_strength_clip)
-        if active_lora_3:
-            model, clip = lora_loader.load_lora(model, clip, lora_3, lora3_strength_model, lora3_strength_clip)
+        # Extract independent state keys for granular cache-matching
+        base_state = (diffusion_model, clip_name, vae_name)
         
-        # 2. Apply LoRAs conditionally
-        lora_loader = LoraLoader()
-        if active_lora_1:
-            model, clip = lora_loader.load_lora(model, clip, lora_1, lora1_strength_model, lora1_strength_clip)
-        if active_lora_2:
-            model, clip = lora_loader.load_lora(model, clip, lora_2, lora2_strength_model, lora2_strength_clip)
-        if active_lora_3:
-            model, clip = lora_loader.load_lora(model, clip, lora_3, lora3_strength_model, lora3_strength_clip)
+        lora_state = (
+            active_lora_1, lora_1, lora1_strength_model, lora1_strength_clip,
+            active_lora_2, lora_2, lora2_strength_model, lora2_strength_clip,
+            active_lora_3, lora_3, lora3_strength_model, lora3_strength_clip
+        )
+        
+        model_name = diffusion_model.lower()
+        is_krea = "krea2" in model_name or "krea2" in clip_name.lower()
+        patch_state = (shift, is_krea, image_length, image_height)
 
-        # 2b. Inject Krea2T-Enhancer-Advanced conditionally (Bypass safely if not found)
-        if "krea2" in model_name:
-            try:
-                import importlib
-                # Safely dynamic-import the external enhancer package
-                enhancer_module = importlib.import_module("custom_nodes.ComfyUI-Krea2T-Enhancer")
-                
-                # Retrieve class from official NODE_CLASS_MAPPINGS dictionary to avoid root namespace omission
-                node_mappings = getattr(enhancer_module, "NODE_CLASS_MAPPINGS", {})
-                Krea2TEnhancerClass = node_mappings.get("Krea2T-Enhancer-Advanced")
-                
-                if Krea2TEnhancerClass is not None:
-                    enhancer_instance = Krea2TEnhancerClass()
-                    
-                    # Dynamically look up execution function target defined in the class
-                    func_name = getattr(Krea2TEnhancerClass, "FUNCTION", "patch")
-                    enhance_func = getattr(enhancer_instance, func_name)
-                    
-                    # Apply the enhancement patch onto the model execution pipeline
-                    print("[NovA_Ultimate_T2I] Info: Applying Krea2T-Enhancer-Advanced patch.")
-                    model = enhance_func(model=model, enabled=True, strength=1.0, text_scale=1.5, debug=False)[0]
-                else:
-                    print("[NovA_Ultimate_T2I] Warning: Krea2T-Enhancer-Advanced key missing in NODE_CLASS_MAPPINGS. Bypassing.")
-            except ImportError:
-                print("[NovA_Ultimate_T2I] Info: ComfyUI-Krea2T-Enhancer repository not found. Bypassing optimizer.")
-            except Exception as e:
-                print(f"[NovA_Ultimate_T2I] Error during Krea2T enhancement processing: {e}")
+        # Compound state definitions
+        patched_model_state = (base_state, lora_state, patch_state)
+        conditioning_state = (patched_model_state, prompt)
 
-        # 3. Apply Shift (Model Patcher mapping for Turbo architectures)
-        if shift != 0.0:
-            import nodes
-            # Convert model name to lowercase for reliable substring matching
-            model_name = diffusion_model.lower()
+        # -------------------------------------------------------------
+        # PHASE 1: Load Pristine Base Models (Only run if loaders change)
+        # -------------------------------------------------------------
+        if self.cached_base_state != base_state:
+            print("[NovA_Ultimate_T2I] Info: Base model inputs changed. Invoking model loaders.")
             
-            try:
-                # Route to ModelSamplingFlux
-                if "flux" in model_name and hasattr(nodes, 'ModelSamplingFlux'):
-                    sampling_node = nodes.ModelSamplingFlux()
-                    # Flux node requires resolution parameters to compute shift scaling natively
-                    model = sampling_node.patch(model, max_shift=shift, base_shift=0.5, width=image_length, height=image_height)[0]
-                
-                # Route to ModelSamplingSD3
-                elif "sd3" in model_name and hasattr(nodes, 'ModelSamplingSD3'):
-                    sampling_node = nodes.ModelSamplingSD3()
-                    model = sampling_node.patch(model, shift)[0]
-                
-                # Route to ModelSamplingAuraFlow (Z-Image Turbo)
-                elif ("z-image" in model_name or "aura" in model_name) and hasattr(nodes, 'ModelSamplingAuraFlow'):
-                    sampling_node = nodes.ModelSamplingAuraFlow()
-                    model = sampling_node.patch(model, shift)[0]
-                
-                # Fallback for unsupported models (e.g., Krea2 Turbo, SDXL)
-                else:
-                    print(f"[NovA_Ultimate_T2I] Info: No native shift patching required or supported for '{diffusion_model}'. Bypassing.")
+            unet_loader = UNETLoader()
+            base_model = unet_loader.load_unet(diffusion_model, "default")[0]
+
+            clip_type = "krea2" if is_krea else "default"
+            clip_loader = CLIPLoader()
+            base_clip = clip_loader.load_clip(clip_name, clip_type)[0]
+
+            vae_loader = VAELoader()
+            base_vae = vae_loader.load_vae(vae_name)[0]
+
+            # Cache the clean base wrappers
+            self.cached_base_model = base_model
+            self.cached_base_clip = base_clip
+            self.cached_base_vae = base_vae
+            self.cached_base_state = base_state
+
+            # Force re-evaluation of downstream dependent states
+            self.cached_patched_model_state = None
+            self.cached_conditioning_state = None
+        else:
+            print("[NovA_Ultimate_T2I] Info: Base model configuration unchanged. Reusing cached base.")
+            base_model = self.cached_base_model
+            base_clip = self.cached_base_clip
+            base_vae = self.cached_base_vae
+
+        # -------------------------------------------------------------
+        # PHASE 2: Apply LoRAs and Enhancers (Only run if LoRAs/patches change)
+        # -------------------------------------------------------------
+        if self.cached_patched_model_state != patched_model_state:
+            print("[NovA_Ultimate_T2I] Info: Patches or LoRAs changed. Re-applying modifications.")
             
-            except Exception as e:
-                print(f"[NovA_Ultimate_T2I] Warning: Shift patching failed. Error: {e}")
+            # SAFE DESIGN: Clone the pristine bases so we do not mutate cached structures in memory
+            working_model = base_model.clone()
+            working_clip = base_clip.clone()
 
-        # 4. Text Encoding
-        text_encoder = CLIPTextEncode()
-        cond = text_encoder.encode(clip, prompt)[0]
-        uncond = text_encoder.encode(clip, "")[0] # Empty negative prompt optimized for Turbo
+            # Apply LoRAs conditionally
+            lora_loader = LoraLoader()
+            if active_lora_1:
+                working_model, working_clip = lora_loader.load_lora(working_model, working_clip, lora_1, lora1_strength_model, lora1_strength_clip)
+            if active_lora_2:
+                working_model, working_clip = lora_loader.load_lora(working_model, working_clip, lora_2, lora2_strength_model, lora2_strength_clip)
+            if active_lora_3:
+                working_model, working_clip = lora_loader.load_lora(working_model, working_clip, lora_3, lora3_strength_model, lora3_strength_clip)
 
-        # 5. Generate Empty Latent
+            # Apply Krea2T Enhancer Patch
+            if is_krea:
+                try:
+                    import importlib
+                    enhancer_module = importlib.import_module("custom_nodes.ComfyUI-Krea2T-Enhancer")
+                    node_mappings = getattr(enhancer_module, "NODE_CLASS_MAPPINGS", {})
+                    Krea2TEnhancerClass = node_mappings.get("Krea2T-Enhancer-Advanced")
+                    
+                    if Krea2TEnhancerClass is not None:
+                        enhancer_instance = Krea2TEnhancerClass()
+                        func_name = getattr(Krea2TEnhancerClass, "FUNCTION", "patch")
+                        enhance_func = getattr(enhancer_instance, func_name)
+                        
+                        print("[NovA_Ultimate_T2I] Info: Applying Krea2T-Enhancer-Advanced patch.")
+                        working_model = enhance_func(model=working_model, enabled=True, strength=1.0, text_scale=1.5, debug=False)[0]
+                    else:
+                        print("[NovA_Ultimate_T2I] Warning: Krea2T-Enhancer-Advanced class missing. Bypassing.")
+                except ImportError:
+                    print("[NovA_Ultimate_T2I] Info: ComfyUI-Krea2T-Enhancer not found. Bypassing optimizer.")
+                except Exception as e:
+                    print(f"[NovA_Ultimate_T2I] Error during Krea2T enhancement processing: {e}")
+
+            # Apply Shift Mapping
+            if shift != 0.0:
+                import nodes
+                try:
+                    if "flux" in model_name and hasattr(nodes, 'ModelSamplingFlux'):
+                        sampling_node = nodes.ModelSamplingFlux()
+                        working_model = sampling_node.patch(working_model, max_shift=shift, base_shift=0.5, width=image_length, height=image_height)[0]
+                    elif "sd3" in model_name and hasattr(nodes, 'ModelSamplingSD3'):
+                        sampling_node = nodes.ModelSamplingSD3()
+                        working_model = sampling_node.patch(working_model, shift)[0]
+                    elif ("z-image" in model_name or "aura" in model_name) and hasattr(nodes, 'ModelSamplingAuraFlow'):
+                        sampling_node = nodes.ModelSamplingAuraFlow()
+                        working_model = sampling_node.patch(working_model, shift)[0]
+                    else:
+                        print(f"[NovA_Ultimate_T2I] Info: No native shift patching required or supported for '{diffusion_model}'. Bypassing.")
+                except Exception as e:
+                    print(f"[NovA_Ultimate_T2I] Warning: Shift patching failed. Error: {e}")
+
+            # Cache the modified/patched results
+            self.cached_patched_model = working_model
+            self.cached_patched_clip = working_clip
+            self.cached_patched_model_state = patched_model_state
+
+            # Force re-evaluation of downstream dependent states
+            self.cached_conditioning_state = None
+        else:
+            print("[NovA_Ultimate_T2I] Info: Patches and LoRAs unchanged. Utilizing cached patched models.")
+            working_model = self.cached_patched_model
+            working_clip = self.cached_patched_clip
+
+        # -------------------------------------------------------------
+        # PHASE 3: Text Encoding (Only run if prompt or patched clip changes)
+        # -------------------------------------------------------------
+        if self.cached_conditioning_state != conditioning_state:
+            print("[NovA_Ultimate_T2I] Info: Prompt or CLIP changed. Encoding text.")
+            text_encoder = CLIPTextEncode()
+            cond = text_encoder.encode(working_clip, prompt)[0]
+            uncond = text_encoder.encode(working_clip, "")[0]
+            
+            # Cache the conditional targets
+            self.cached_cond = cond
+            self.cached_uncond = uncond
+            self.cached_conditioning_state = conditioning_state
+        else:
+            print("[NovA_Ultimate_T2I] Info: Prompt and CLIP unchanged. Utilizing cached conditioning.")
+            cond = self.cached_cond
+            uncond = self.cached_uncond
+
+        # -------------------------------------------------------------
+        # PHASE 4: Processing Pipelines (Run continuously)
+        # -------------------------------------------------------------
         latent_node = EmptyLatentImage()
         latent = latent_node.generate(image_length, image_height, 1)[0]
 
-        # 6. Sampling
         ksampler = KSampler()
-        samples = ksampler.sample(model, seed, steps, cfg, sampler_name, scheduler, cond, uncond, latent, denoise=1.0)[0]
+        samples = ksampler.sample(working_model, seed, steps, cfg, sampler_name, scheduler, cond, uncond, latent, denoise=1.0)[0]
 
-        # 7. VAE Decoding
         vae_decoder = VAEDecode()
-        image = vae_decoder.decode(vae, samples)[0]
+        image = vae_decoder.decode(base_vae, samples)[0]
 
-        return (image, cond, model, vae, samples)
+        return (image, cond, working_model, base_vae, samples)
 
-# ComfyUI registry mappings for explicit dynamic discovery by the __init__.py
 NODE_CLASS_MAPPINGS = {"NovAUltimateT2I": NovA_Ultimate_T2I}
 NODE_DISPLAY_NAME_MAPPINGS = {"NovAUltimateT2I": "NovA Ultimate Text to Image"}
