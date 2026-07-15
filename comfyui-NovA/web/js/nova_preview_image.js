@@ -1,4 +1,4 @@
-import { app } from "../../../scripts/app.js";
+import { app } from "/scripts/app.js";
 import { api } from "/scripts/api.js";
 
 app.registerExtension({
@@ -21,14 +21,13 @@ app.registerExtension({
                 // Prevent this runtime UI action widget from cluttering workflow JSON serialization
                 saveButton.serialize = false;
 
-                // INITIAL SIZE SETUP: Set default width for new nodes
+                // Minimal size adjustment to cleanly accommodate the added save button
                 const minSize = node.computeSize();
-                const defaultWidth = 704;
-                const defaultHeight = 256;
                 node.size = [
-                    Math.max(node.size[0], minSize[0], defaultWidth),
-                    Math.max(node.size[1], minSize[1], defaultHeight)
+                    Math.max(node.size[0], minSize[0]),
+                    Math.max(node.size[1], minSize[1] + 60) // Add margin for the action button
                 ];
+
                 node.setDirtyCanvas(true, true);
             }, 1);
 
@@ -47,12 +46,17 @@ app.registerExtension({
                     img.src = `/view?filename=${encodeURIComponent(imgMetadata.filename)}&type=${imgMetadata.type}&subfolder=${encodeURIComponent(imgMetadata.subfolder)}`;
                     
                     img.onload = () => {
-                        // Capture pre-execution boundaries configured by the user
-                        const initialWidth = this.size[0]; 
-                        const initialHeight = this.size[1];
-                        
-                        // Vertical layout offset for the title bar and custom export button
-                        const widgetPadding = 60; 
+                        // --- TRACK USER RESIZING VS PROGRAMMATIC RESIZING ---
+                        // Update base reference only if the node size changed outside of the script (manual user resize)
+                        if (!this.userBaseWidth || Math.abs(this.size[0] - (this.lastProgrammaticWidth || 0)) > 2) {
+                            this.userBaseWidth = this.size[0];
+                        }
+                        if (!this.userBaseHeight || Math.abs(this.size[1] - (this.lastProgrammaticHeight || 0)) > 2) {
+                            this.userBaseHeight = this.size[1];
+                        }
+
+                        const initialWidth = this.userBaseWidth; 
+                        const initialHeight = this.userBaseHeight;
                         
                         // Compute raw physical dimensions and structural ratios
                         const imgWidth = img.naturalWidth;
@@ -62,16 +66,21 @@ app.registerExtension({
                         let targetWidth = initialWidth;
                         let targetHeight = initialHeight;
 
-                        // STRICT ASPECT RATIO DIRECTIONAL SCALING
+                        // --- ADAPTIVE ASPECT RATIO SCALING ---
                         if (imgWidth > imgHeight) {
-                            // LANDSCAPE: Keep initial height, scale width proportionally based on clean canvas area
-                            const activeCanvasHeight = Math.max(initialHeight - widgetPadding, 64);
-                            targetWidth = activeCanvasHeight / imageAspect;
-                            targetHeight = initialHeight; 
+                            // LANDSCAPE:
+                            // Raw base calculation for landscape layout (mandatory)
+                            const baseTargetWidth = initialHeight / imageAspect;
+                            targetWidth = baseTargetWidth - 216;
+							targetHeight = initialHeight;
+                        } else if (imgWidth === imgHeight) {
+                            // SQUARE
+                            targetWidth = initialWidth - 96;
+                            targetHeight = initialWidth * imageAspect;
                         } else {
-                            // PORTRAIT & SQUARE: Keep initial width, scale height proportionally and add layout padding
-                            targetWidth = initialWidth;
-                            targetHeight = (initialWidth * imageAspect) + widgetPadding;
+                            // PORTRAIT:
+                            targetWidth = initialWidth - 64;
+                            targetHeight = initialWidth * imageAspect;
                         }
 
                         // Apply new proportional bounding dimensions using safe layout ceilings
@@ -79,6 +88,11 @@ app.registerExtension({
                             Math.max(targetWidth, 120), 
                             Math.max(targetHeight, 120)
                         ];
+
+                        // Cache the newly applied size to bypass shrinking loops on subsequent executions
+                        this.lastProgrammaticWidth = this.size[0];
+                        this.lastProgrammaticHeight = this.size[1];
+
                         this.setDirtyCanvas(true, true);
                     };
                 }
