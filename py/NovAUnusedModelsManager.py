@@ -12,7 +12,7 @@ class NovAUnusedModelsManager:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                # Primary trigger to enable or disable scan execution
+                # Toggle option to include or exclude standard model directories
                 "include_models": ("BOOLEAN", {"default": True, "label_on": "Scan Models", "label_off": "Off"}),
                 # Toggle option to include or exclude LoRAs directory
                 "include_loras": ("BOOLEAN", {"default": False, "label_on": "Scan LoRAs", "label_off": "Off"}),
@@ -31,8 +31,9 @@ class NovAUnusedModelsManager:
         return (include_models, include_loras)
 
     def scan_unused_models(self, include_models, include_loras):
+        # Early exit if both scanning options are disabled
         if not include_models and not include_loras:
-            print("[NovA Models Manager] Scan skipped (include_models is set to Off).")
+            print("[NovA Models Manager] Scan skipped (both toggles are set to Off).")
             text_output = "Scan is turned OFF. Select 'include_models' and/or 'include_loras' to run."
             return {"ui": {"text": [text_output]}, "result": (text_output,)}
 
@@ -54,20 +55,25 @@ class NovAUnusedModelsManager:
                         except Exception as e:
                             print(f"[NovA Models Manager] Error reading workflow {filepath}: {e}")
 
-        categories = {
-            "background_removal": "Background Removal",
-            "checkpoints": "Checkpoints",
-            "clip": "CLIP Model",
-            "clip_vision": "CLIP Vision",
-            "controlnet": "Controlnet",
-            "diffusion_models": "Diffusion Model",
-            "latent_upscale_models": "Latent Upscale Models",
-            "model_patches": "Model Patches",
-            "text_encoders": "Text Encoders",
-            "unet": "Unet Model",
-            "upscale_models": "Upscale Models",
-            "vae": "VAE Model"
-        }
+        # Build categories dictionary dynamically based on active toggle switches
+        categories = {}
+
+        if include_models:
+            categories.update({
+                "background_removal": "Background Removal",
+                "checkpoints": "Checkpoints",
+                "clip": "CLIP Model",
+                "clip_vision": "CLIP Vision",
+                "controlnet": "Controlnet",
+                "diffusion_models": "Diffusion Model",
+                "ipadapter": "IPAdapter",
+                "latent_upscale_models": "Latent Upscale Models",
+                "model_patches": "Model Patches",
+                "text_encoders": "Text Encoders",
+                "unet": "Unet Model",
+                "upscale_models": "Upscale Models",
+                "vae": "VAE Model"
+            })
 
         if include_loras:
             categories["loras"] = "LoRA Model"
@@ -100,15 +106,16 @@ class NovAUnusedModelsManager:
 
         final_text = "\n".join(result_lines).strip()
         if not final_text:
-            final_text = "No unused models found. All models are actively used."
+            final_text = "No unused models found. All selected categories are actively used."
 
         return {"ui": {"text": [final_text]}, "result": (final_text,)}
 
     def _extract_strings(self, obj, string_set):
         """Recursively scan JSON data while ignoring payload from NovAModelsManager nodes."""
         if isinstance(obj, dict):
-            # Ignore nodes of type NovAModelsManager to prevent self-referencing false negatives
-            if obj.get("type") == "NovAModelsManager" or obj.get("class_type") == "NovAModelsManager":
+            # Ignore nodes of type NovAModelsManager or NovAUnusedModelsManager to prevent self-referencing false negatives
+            if obj.get("type") in ("NovAModelsManager", "NovAUnusedModelsManager") or \
+               obj.get("class_type") in ("NovAModelsManager", "NovAUnusedModelsManager"):
                 return
             for val in obj.values():
                 self._extract_strings(val, string_set)
