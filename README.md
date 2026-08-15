@@ -1,7 +1,7 @@
 # comfyui-NovA
 Some (hopefully) useful nodes for ComfyUI, designed for Node 2.0, to simplify your workflows.
 
-- The "NovAModelsManager" node allows you to view all your models (Diffusion, Text Encoder, VAE, etc.) that are not used by the workflows saved in `ComfyUI\user\default\workflows`. This lets you see at a glance which models can be safely deleted from your hard drive. Scanning for unused LoRA models is optional, as you might not be using them yet but still wish to keep them.
+- The "NovAUnusedModelsManager" node allows you to view all your models (Diffusion, Text Encoder, VAE, etc.) that are not used by the workflows saved in `ComfyUI\user\default\workflows`. This lets you see at a glance which models can be safely deleted from your hard drive. Scanning for unused LoRA models is optional, as you might not be using them yet but still wish to keep them.
 Deleting models remains a manual process, so there is no need to worry; the node simply provides an overview, while you retain full control.
 
 - The all-in-one "NovAModelsLoader" node allows you to load the standard models required for text-to-image generation (Diffusion Model, Text Encoder, and VAE) within a single node, which means less "spaghetti" in your workflow.
